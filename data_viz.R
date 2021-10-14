@@ -253,6 +253,15 @@ seltlan<-cvd1 %>%
   distinct(LAD20NM) %>% 
   select(LAD20NM)  
 
+cvd1 <- cvd1 %>% ungroup()
+
+target = c("Slough", "Southampton", "Woking")
+
+small_example <- cvd1 %>%
+  filter(LAD20NM %in% target)
+
+lad_choices = list(`Slough`="Slough", `Southampton`="Southampton", `Woking`="Woking")
+
 area<-cvd2%>%
   filter(RGN20NM=="South East") %>% 
   select(`LAD20NM`)%>%
@@ -268,8 +277,7 @@ ui<-fluidPage(
   
   # Copy the line below to make a select box - LK: how do look-up list 
   selectInput(inputId="select", label = h3("Select box"), 
-              choices = area, # check CL how to link with number/name?
-              selected = 1),
+              choices = lad_choices),
   
   hr(),
   fluidRow(column(3, verbatimTextOutput("value"))),
@@ -280,7 +288,7 @@ ui<-fluidPage(
 server <- function(input, output) {
   output$chart<-renderPlot({  # call it chart as in the plot output above
     title<-"example chart for data viz"
-    ggplot(cvd2%>%filter(input$select), 
+    ggplot(small_example%>%filter(LAD20NM==input$select), 
               aes(x=WD20NM,y=Value))+
       geom_col()
     })
