@@ -28,11 +28,12 @@ library("maptools")
 library("rgdal")
 library("rgeos")
 
+
 #library(hrbrthemes) #for the heat map??
 #library("tidyverse") - do I need this? conflicts
 
-## will set for mentor to run
-setwd("H:/2 Data Visualisation/5 R code")
+## do not need as on the project now
+#setwd("H:/2 Data Visualisation/5 R code")
 
 # ## Get data from fingertips for LH
 # lhins_ft<-fingertips_data(ProfileID =143, AreaTypeID = "All")
@@ -251,18 +252,74 @@ p<-ggplot(cvd3, aes(WD20NM, Indicator, fill= Within_LAD_Quintile,text=text)) +
 ?ggplot
 ?unlist 
 
-##### try map static ##############################
+##### try map using leaflet####
 # downloaded shapefile from here: https://geoportal.statistics.gov.uk/datasets/ons::wards-may-2020-boundaries-uk-bgc/about
 # is this generlised clipped- Boundaries?: This file contains the digital vector boundaries for Wards, in the United Kingdom, as at May 2020. The boundaries available are: (BGC) Generalised (20m) - clipped to the coastline (Mean High Water mark).
 Wards20 <- readOGR(dsn="https://opendata.arcgis.com/datasets/62bfaabbe3e24a359fc36b34d7fe8ac8_0.geojson") # Reads in all wards for UK
-                  #, layer="Wards_(May_2020)_Boundaries_UK_BGC"
+#, layer="Wards_(May_2020)_Boundaries_UK_BGC"
 Wards20$wd20cd <- as.character(Wards20$wd20cd)
 
-# issue with only the LAD?
-LAD20 <- readOGR(dsn="https://opendata.arcgis.com/datasets/9d86e7bcf2864343ab72e2914756b86d_0.geojson") # Reads in all LAs for UK
-                 #, layer="Local_Authority_Districts_(May_2020)_Boundaries_UK_BFE") 
+LAD20 <- readOGR(dsn="https://opendata.arcgis.com/datasets/db23041df155451b9a703494854c18c4_0.geojson") # Reads in all LAs for UK
+#,layer="Local Authority Districts (December 2020) UK BGC")
 LAD20$lad20cd <- as.character(LAD20$lad20cd)
 
+#The GeoJSON is read as a special type of dataframe called a Spatial Polygons Data Frame (SPDF).
+
+
+
+##### Try leaflet### https://rstudio.github.io/leaflet/
+#https://rpubs.com/mattdray/basic-leaflet-maps
+glimpse(LAD20)
+
+lads_eng <- subset(
+  x = LAD20,  # our data
+  subset = grepl(  # subset the data where the following pattern is matched
+    x = LAD20@data$LAD20CD,  # in this variable in this slot of this SPDF
+    pattern = "^E"  # subset anything starting with 'E'
+  )
+)
+
+length(lads_eng@data$LAD20CD)  # check that the number of LADs is reduced- N=314
+
+wd_eng <- subset(
+  x = Wards20,  # our data
+  subset = grepl(  # subset the data where the following pattern is matched
+    x = Wards20@data$wd20cd,  # in this variable in this slot of this SPDF
+    pattern = "^E"  # subset anything starting with 'E'
+  )
+)
+
+length(wd_eng@data$wd20cd)  # check that the number of LADs is reduced- N=7147
+
+map <- leaflet() %>%
+  addProviderTiles(providers$OpenStreetMap)
+
+map  # show the map
+
+map_lad <- map %>%
+  addPolygons(
+    data = lads_eng,  # LAD polygon data from geojson
+    weight = 1,  # line thickness
+    opacity = 1,  # line transparency
+    color = "black",  # line colour
+    fillOpacity = ifelse(  # conditional fill opacity
+      test = lads_eng@data$st_areashape > 1E+09,  # if area is over this value - will need to change to Quintile
+      yes = 0.5,  # then make it half-opaque
+      no = 0  # otherwise make it entirely transparent
+    ),
+    fillColor = "blue",
+    label = ~LAD20NM  # LAD name as a hover label
+  )
+
+map_lad  # show the map
+
+#https://rstudio.github.io/leaflet/shiny.html  # how to add map to Rshiny
+
+##### try JW code to map a statics in ppt first? ####
+#local.health <- read.csv("Y:/Chancellor4All/SEKIT4All/Local K&I Service Work/Enquiries/2019/Health_inequalities_update_GBD2017/Outputs/Excel/Local_Health_Collated_Output_2019_LA_FINAL_20190827.csv")
+
+cvd2 <- read.csv("cvd2.csv") # restrict to SE?
+local.health<-cvd2
 #Declare region codes
 RegCode <-c("E12000001","E12000002","E12000003","E12000004","E12000005","E12000006","E12000007","E12000008","E12000009")
 
