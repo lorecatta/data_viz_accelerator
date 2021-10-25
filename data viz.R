@@ -264,11 +264,15 @@ p<-ggplot(cvd3, aes(WD20NM, Indicator, fill= Within_LAD_Quintile,text=text)) +
 ##### try map using leaflet#### read _sf --> check if load then don't need to transform. LK
 # downloaded shapefile from here: https://geoportal.statistics.gov.uk/datasets/ons::wards-may-2020-boundaries-uk-bgc/about
 # is this generlised clipped- Boundaries?: This file contains the digital vector boundaries for Wards, in the United Kingdom, as at May 2020. The boundaries available are: (BGC) Generalised (20m) - clipped to the coastline (Mean High Water mark).
-Wards20 <- read_sf(dsn="https://opendata.arcgis.com/datasets/62bfaabbe3e24a359fc36b34d7fe8ac8_0.geojson") # Reads in all wards for UK
+url <- "https://opendata.arcgis.com/datasets/62bfaabbe3e24a359fc36b34d7fe8ac8_0.geojson"
+
+Wards20 <- read_sf(url) # Reads in all wards for UK
 #, layer="Wards_(May_2020)_Boundaries_UK_BGC"
 Wards20$wd20cd <- as.character(Wards20$wd20cd)
 
-LAD20 <- readOGR(dsn="https://opendata.arcgis.com/datasets/db23041df155451b9a703494854c18c4_0.geojson") # Reads in all LAs for UK
+LAD20_url <- "https://opendata.arcgis.com/datasets/db23041df155451b9a703494854c18c4_0.geojson"
+
+LAD20 <- read_sf(LAD20_url) # Reads in all LAs for UK
 #,layer="Local Authority Districts (December 2020) UK BGC")
 LAD20$lad20cd <- as.character(LAD20$lad20cd)
 
@@ -343,8 +347,9 @@ small_example <- read.csv("small_example.csv")  # this is made in shiny code- ju
 # merge not rbind as spatial data, in sp package. 
 # for now just want to test the small example (3 indicators per ward). = so only matching.
 ?merge
-Wards20ind <- merge(x=, y=small_example, # X= change to sf object once you have the sf - LK
-                    by.x="id",
+Wards20ind <- merge(x=Wards20, 
+                    y=small_example, # X= change to sf object once you have the sf - LK
+                    by.x="wd20cd",
                     by.y="AreaCode")
 
 # 2) set the color## 
