@@ -8,32 +8,40 @@
 # 
 # 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
 
+#####
+# install packages
+#####
 #install.packages("plotly")
 #install.packages("maptools") # will be retired in 2023- sp? https://cran.r-project.org/web/packages/sp/index.html
 #install.packages("rgdal") #https://cran.r-project.org/web/packages/rgdal/index.html
-#install.packages("rgeos")
+#install.packages("rgeos") #https://medium.com/@snehalgawas/introduction-to-spatial-data-analysis-in-r-using-rgeos-ea69059c3b90
+# install.packages("leaflet")
+# install.packages("readxl")
+# install.packages("tidyverse")
+#install.packages("sf") # https://r-spatial.github.io/sf/index.html - this is the best one to use LC
 
-#https://medium.com/@snehalgawas/introduction-to-spatial-data-analysis-in-r-using-rgeos-ea69059c3b90
 # need ggmap ?
-
-# https://r-spatial.github.io/sf/index.html - this is the best one to use 
-
+#library
+#####
 library(fingertipsR)
 library(DataLakeR)
 library(dplyr)
 library(ggplot2)
 library(plotly)
 library(shiny)
+# this is was JW used in the slide packs
 library("maptools") 
 library("rgdal")
 library("rgeos")
-
+# mentor recommends I use this:
+library(sf)
+# this is from the R ExChange leaflet example
+library (leaflet)
+library(readxl)
+library(tidyverse)
 
 #library(hrbrthemes) #for the heat map??
 #library("tidyverse") - do I need this? conflicts
-
-## do not need as on the project now
-#setwd("H:/2 Data Visualisation/5 R code")
 
 # ## Get data from fingertips for LH
 # lhins_ft<-fingertips_data(ProfileID =143, AreaTypeID = "All")
@@ -233,8 +241,9 @@ p<-ggplot(cvd3, aes(WD20NM, IndicatorName, fill= Within_LAD_Quintile)) +
 dev.new() 
 p
 
-# how to put many plots on one panel, so I can quickly view them? -  check with LC?
-# with the total score as a different color? how bring one indicator in at a time? -(now or later to check LC?)
+# how to put many plots on one panel- https://patchwork.data-imaginist.com/
+# with the total score as a different color? 
+# how bring one indicator in at a time? -(now or later to check LC?)
 
 # add the interactive hover for value
 cvd3 <- cvd3 %>%
@@ -251,11 +260,11 @@ p<-ggplot(cvd3, aes(WD20NM, Indicator, fill= Within_LAD_Quintile,text=text)) +
 ?plotly
 ?ggplot
 ?unlist 
-
-##### try map using leaflet####
+?read_sf
+##### try map using leaflet#### read _sf --> check if load then don't need to transform. LK
 # downloaded shapefile from here: https://geoportal.statistics.gov.uk/datasets/ons::wards-may-2020-boundaries-uk-bgc/about
 # is this generlised clipped- Boundaries?: This file contains the digital vector boundaries for Wards, in the United Kingdom, as at May 2020. The boundaries available are: (BGC) Generalised (20m) - clipped to the coastline (Mean High Water mark).
-Wards20 <- readOGR(dsn="https://opendata.arcgis.com/datasets/62bfaabbe3e24a359fc36b34d7fe8ac8_0.geojson") # Reads in all wards for UK
+Wards20 <- read_sf(dsn="https://opendata.arcgis.com/datasets/62bfaabbe3e24a359fc36b34d7fe8ac8_0.geojson") # Reads in all wards for UK
 #, layer="Wards_(May_2020)_Boundaries_UK_BGC"
 Wards20$wd20cd <- as.character(Wards20$wd20cd)
 
@@ -269,6 +278,7 @@ LAD20$lad20cd <- as.character(LAD20$lad20cd)
 
 ##### Try leaflet### https://rstudio.github.io/leaflet/
 #https://rpubs.com/mattdray/basic-leaflet-maps
+# dhexchange examples: https://dhexchange.kahootz.com/AnalystLearningExchange/view?objectId=10583696 - R session 587 and 58 are maps.
 glimpse(LAD20)
 
 lads_eng <- subset(
@@ -289,7 +299,7 @@ wd_eng <- subset(
   )
 )
 
-length(wd_eng@data$wd20cd)  # check that the number of LADs is reduced- N=7147
+length(wd_eng@data$wd20cd)  # check that the number of wds is reduced- N=7147
 
 map <- leaflet() %>%
   addProviderTiles(providers$OpenStreetMap)
@@ -312,183 +322,103 @@ map_lad <- map %>%
   )
 
 map_lad  # show the map
-
+###################################
+# wards- this is what we will need
+###################################
+#https://www.r-graph-gallery.com/183-choropleth-map-with-leaflet.html
 #https://rstudio.github.io/leaflet/shiny.html  # how to add map to Rshiny
-
-##### try JW code to map a statics in ppt first? ####
-#local.health <- read.csv("Y:/Chancellor4All/SEKIT4All/Local K&I Service Work/Enquiries/2019/Health_inequalities_update_GBD2017/Outputs/Excel/Local_Health_Collated_Output_2019_LA_FINAL_20190827.csv")
-
-cvd2 <- read.csv("cvd2.csv") # restrict to SE?
-local.health<-cvd2
-#Declare region codes
-RegCode <-c("E12000001","E12000002","E12000003","E12000004","E12000005","E12000006","E12000007","E12000008","E12000009")
-
-#Read in shapefiles  https://www.rdocumentation.org/packages/rgdal/versions/1.5-27/topics/readOGR
-Wards18 <- readOGR(dsn="Shapefiles/Wards/Wards_December_2018_Generalised_Clipped_Boundaries_England.shp", layer="Wards_December_2018_Generalised_Clipped_Boundaries_England") # Reads in all wards for the country
-Wards18$wd18cd <- as.character(Wards18$wd18cd)
-
-LAD18 <- readOGR(dsn="Shapefiles/Local_authority/Local_Authority_Districts_December_2018_Generalised_Clipped_Boundaries_England.shp", layer="Local_Authority_Districts_December_2018_Generalised_Clipped_Boundaries_England") # Reads in all LAs for the country
-LAD18$lad18cd <- as.character(LAD18$lad18cd)
-
-desc(Wards18) # check LC
-?seq_along
-
-###START THE FOR LOOP #######
-for (k in Wards18 (RegCode)) {
-  
-  Rlocal.health <- local.health[which(local.health$RGN18CD %in% paste(RegCode[k])),]
-
-  # Filter Shapefiles ----------
-  Ward.Codes <- unique(Rlocal.health$WARD18_Code)
-  WardShp <-Wards18
-  WardShp$Flag <- WardShp$wd18cd %in% Ward.Codes
-  WardShp <- WardShp[WardShp$Flag==TRUE,]
-  
-  LAD.Codes <- unique(Rlocal.health$LAD18_Code)
-  LADShp <-LAD18
-  LADShp$Flag <- LADShp$lad18cd %in% LAD.Codes
-  LADShp <- LADShp[LADShp$Flag==TRUE,]
-  
-  # List unique indicators & LAs for the FOR loop
-  indicator.list <- unique(Rlocal.health$Indicator)
-
-  ### remove reverse polarity indicators
-  indicator.list <- indicator.list[!indicator.list %in% reverse.polarity]
-  
-  la.list <- as.character(unique(Rlocal.health$LAD18_Code))
-  
-  # Convert the shapefiles to a dataframe ----------
-  # This allows data to be attached more easily and
-  # is also required for gpplot to be able to plot the data
-  
-  Wards18.Fort <- fortify(WardShp, region="wd18cd")
-  LAD18.Fort <- fortify(LADShp, region="lad18cd")
-  
-  # Merge Data with fortified shapefile ----------
-  Wards18.Fort <- merge(x=Wards18.Fort, y=Rlocal.health,
-                        by.x="id",
-                        by.y="WARD18_Code")
-
-  # Plot maps ----------
-  
-  for(i in indicator.list){
-    for(j in la.list){
-      my.palette.function <- colorRampPalette(c("#fde8ee", "#98002E"))
-      some.colours <- my.palette.function(5)
-      
-      plot.data <- Wards18.Fort[which(Wards18.Fort$Indicator==i & Wards18.Fort$LAD18_Code==j),]
-      LAD.data <- LAD18.Fort[which(LAD18.Fort$id==j),]
-      
-      la.name <- as.character(unique(plot.data$LAD18_Name))
-      reg.name <- as.character(unique(plot.data$RGN18NM))
-      
-      plot.data$Within_LAD_Quintile = as.character(plot.data$Within_LAD_Quintile)
-      p <- ggplot() +
-        geom_polygon(data=LAD.data,aes(x=long, y=lat, group=group), col="#eeeeee", size=0, fill="#ffc251") +
-        geom_polygon(data=plot.data,aes(x=long, y=lat, group=group, fill=Within_LAD_Quintile), col="white",  size=0.5) +
-        geom_polygon(data=LAD.data,aes(x=long, y=lat, group=group), col="#98002E", size=0.75, fill=NA) +
-        
-        #labs(x="Easting",y="Northing") +
-        coord_equal() +
-        scale_fill_manual(values = some.colours,name = "Within Area Quintile") +
-        guides(fill = guide_legend(
-          title.position = "top",title.hjust = 0.5, # changes the position of the legend title and centres it
-          label.position = "right",label.hjust = 0.5)) +  # changes the position of the legend labels and centres them
-        #      labs(title=paste(la.name,"\n",i,sep="")) +
-        theme(
-          legend.position="right",
-          legend.key = element_rect(linetype= 0),
-          axis.text=element_blank(),
-          axis.title=element_blank(),
-          axis.ticks=element_blank(),
-          panel.border=element_blank(),
-          panel.grid=element_blank()
-        )
-      #plot(p)
-      
-      ggsave(plot=p,
-             filename=paste("Outputs/Maps/LAD_Red/",reg.name,"/",j,"_",la.name,"_",gsub(" ","_",i),".png",sep=""),
-             type ="cairo-png",
-             width=150, height=150,
-             dpi=300,
-             units="mm")
-      
-      
-    }}
-
-}
-
-
-# 14/10/21 plan
-# sort out the shiny select and the chart working
-# test the map static
-# add the heat map chart to shiny
-# add map to the shiny (check re zoom in)
-# use  reactive to have the areaname as selected once and apply to chart and map
-# use reactive again to have the indicator on chart and map interactive
-
-STOP
-
-######################################################
-###3) Rshiny 
-######################################################
-## template here https://shiny.rstudio.com/tutorial/
-cvd2 <- read.csv("cvd2.csv")
-
-############ Shiny preps
-# list for LA
-seltlan<-cvd1 %>% 
-  distinct(LAD20NM) %>% 
-  select(LAD20NM)  
-
-cvd1 <- cvd1 %>% ungroup()
-
-target = c("Slough", "Southampton", "Woking")
-
-small_example <- cvd1 %>%
-  filter(LAD20NM %in% target)
-
-lad_choices = list(`Slough`="Slough", `Southampton`="Southampton", `Woking`="Woking")
-
-area<-cvd2%>%
-  filter(RGN20NM=="South East") %>% 
-  select(`LAD20NM`)%>%
-  distinct()%>%
-  unlist() # check with JC?
-
-?selectInput
-
-seltlan$ID <- seq.int(nrow(seltlan)) 
-
 ###############################
-ui<-fluidPage(
-  
-  # Copy the line below to make a select box - LK: how do look-up list 
-  selectInput(inputId="select", label = h3("Select box"), 
-              choices = lad_choices),
-  
-  hr(),
-  fluidRow(column(3, verbatimTextOutput("value"))),
-  plotOutput("chart")
-  
-)
+small_example <- read.csv("small_example.csv")  # this is made in shiny code- just pulling in here to test map
+###############################
 
-server <- function(input, output) {
-  output$chart<-renderPlot({  # call it chart as in the plot output above
-    title<-"example chart for data viz"
-    ggplot(small_example%>%filter(LAD20NM==input$select), 
-              aes(x=WD20NM,y=Value))+
-      geom_col()
-    })
-}
+# 1) Convert the shapefiles to a dataframe ---------- Check with LC? 
+# This allows data to be attached more easily and
+# is also required for gpplot to be able to plot the data
+# WdShp <-Wards20
+# Wds20Fort <- fortify(WdShp, region="wd20cd")
+# ? fortify # going out of date use broom?
 
-shinyApp(ui = ui, server = server)
+# do I need to merge or can you work across shapefile and df?
+# Merge Data with fortified shapefile ---------- 
+# merge not rbind as spatial data, in sp package. 
+# for now just want to test the small example (3 indicators per ward). = so only matching.
+?merge
+Wards20ind <- merge(x=, y=small_example, # X= change to sf object once you have the sf - LK
+                    by.x="id",
+                    by.y="AreaCode")
+
+# 2) set the color## 
+# from JW packs
+my.palette.function <- colorRampPalette(c("#fde8ee", "#98002E"))
+some.colours <- my.palette.function(5)
+
+# or use this code - from the example below? - Quantile?
+# example https://www.r-graph-gallery.com/183-choropleth-map-with-leaflet.html
+mypalette <- colorNumeric( palette="viridis", domain=world_spdf@data$POP2005, na.color="transparent")
+mypalette(c(45,43))
+
+# m <- leaflet(world_spdf) %>% 
+#   addTiles()  %>% 
+#   setView( lat=10, lng=0 , zoom=2) %>%
+#   addPolygons( fillColor = ~mypalette(POP2005), stroke=FALSE )
+# 
+# m
+# 
+#   m <- leaflet(world_spdf)%>% addTiles()  %>% setView( lat=10, lng=0 , zoom=2) %>%
+#   addPolygons( stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorQuantile("YlOrRd", POP2005)(POP2005) )
+
+
+?colorQuantile
+?setView
+?addPolygons
+
+# 3) test on the map ##### need to select the indicator for the quantiles
+map <- leaflet() %>%
+  addProviderTiles(providers$OpenStreetMap)
+
+map  # show the map
+map_wd <- map %>%
+  addTiles() %>% 
+  #setView()or flyTo() # add flyin zoom here?
+  addPolygons(
+    data = wd_eng,  # ward polygon data from geojson
+    weight = 1,  # line thickness
+    opacity = 1,  # line transparency
+    color = "black",  # line colour
+    fillColor=~mypalette(Within_LAD_Quintile), stroke=FALSE,  # can I add code for the quintile here? - LC? -
+    label = ~wd20nm  #  name as a hover label
+  )
+
+map_wd  # show the map
+
+# test this way
+mypalette <- colorNumeric( palette="red", domain=Wards20@data$wd20mn, na.color="transparent")
+mypalette(c(45,43))
+
+m <- leaflet(Wards20) %>% 
+  addTiles()  %>% 
+#  setView( lat=10, lng=0 , zoom=2) %>%
+  addPolygons( fillColor = ~mypalette(Wards20@data$wd20mn), stroke=FALSE )
+
+m
+
+m <- leaflet(Wards20)%>% addTiles()  %>% setView( lat=10, lng=0 , zoom=2) %>%
+  addPolygons( stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorQuantile("YlOrRd", POP2005)(POP2005) )
 
 
 
-# examples:
-# Play action? https://stackoverflow.com/questions/56708762/how-do-i-link-a-shiny-action-button-to-a-plotly-animation-in-r
-# https://shiny.rstudio.com/gallery/widget-gallery.html
-# maps and zoom: https://shiny.rstudio.com/gallery/superzip-example.html
-# flyto or leaflet might be it: https://gis.stackexchange.com/questions/168687/fly-to-location-in-leaflet/168688
-# click on plot point https://shiny.rstudio.com/gallery/plot-interaction-selecting-points.html
+
+
+
+
+# 14/10/21 plan - updated 23/10/21
+# sort out the shiny select and the chart working - sort out for full dataset rather than just small example
+# test the map static - done using leaflet -the wards with quantiles next - now
+# add the heat map chart to shiny - done- why is the value over not working
+# add map to the shiny (check re zoom in) 
+# use reactive to have the areaname as selected once and apply to chart and map
+# use reactive again to have the indicator one by one (how?)on chart and map interactive
+#?add in the composite value
+
+
+
