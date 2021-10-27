@@ -261,6 +261,8 @@ p<-ggplot(cvd3, aes(WD20NM, Indicator, fill= Within_LAD_Quintile,text=text)) +
 ?ggplot
 ?unlist 
 ?read_sf
+
+### https://cran.r-project.org/web/packages/geojsonsf/vignettes/geojson-sf-conversions.html
 ##### try map using leaflet#### read _sf --> check if load then don't need to transform. LK
 # downloaded shapefile from here: https://geoportal.statistics.gov.uk/datasets/ons::wards-may-2020-boundaries-uk-bgc/about
 # is this generlised clipped- Boundaries?: This file contains the digital vector boundaries for Wards, in the United Kingdom, as at May 2020. The boundaries available are: (BGC) Generalised (20m) - clipped to the coastline (Mean High Water mark).
@@ -414,7 +416,7 @@ m <- leaflet(Wards20)%>% addTiles()  %>% setView( lat=10, lng=0 , zoom=2) %>%
 # 14/10/21 plan - updated 23/10/21
 # sort out the shiny select and the chart working - sort out for full dataset rather than just small example
 # test the map static - done using leaflet -the wards with quantiles next - now
-# add the heat map chart to shiny - done- why is the value over not working
+# add the heat map chart to shiny - done- why is the value hover not working
 # add map to the shiny (check re zoom in) 
 # use reactive to have the areaname as selected once and apply to chart and map
 # use reactive again to have the indicator one by one (how?)on chart and map interactive
