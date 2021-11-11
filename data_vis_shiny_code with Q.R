@@ -239,8 +239,7 @@ ui <- fluidPage(
       
       selectInput(inputId = "select_ind", 
                   label = h3("Select indicator"),
-                  choices = ind_choices,
-                  selectize=FALSE),
+                  choices = ind_choices),
       selectInput(inputId="select_area", 
                   label = h3("Select area"), 
                   choices = lad_choices)
