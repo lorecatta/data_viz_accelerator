@@ -178,7 +178,7 @@ server <- function(input, output, session) {
 
 shinyApp(ui = ui, server = server)
 #######################################
-### 5) indicator and area section (two inputs) on a simple chart - not working
+### 5) indicator and area section (two inputs) one output a simple chart  
 ######################################
 ui<-fluidPage(
   
@@ -198,19 +198,19 @@ ui<-fluidPage(
 )
 
 server <- function(input, output) {
-  
+ 
   inds <- reactive({
     Wards20ind%>%filter(Indicator==input$select_ind)
   })
   
-  areas<- reactive({
-    Wards20ind%>%filter(LAD20NM==input$select_area)
-  })
+ areas <- reactive({
+   Wards20ind%>%filter(LAD20NM==input$select_area)
+   })
   
-  
+      
   output$chart<-renderPlot({
     title<-"example chart for data viz"
-    ggplot(areas(), inds(), ### how select both on a chart? - LC?
+    ggplot(areas(), inds(),
            aes(x=WD20NM,y=Value))+
       geom_col()
   })
@@ -219,9 +219,16 @@ server <- function(input, output) {
 shinyApp(ui = ui, server = server)
 
   
+# subset <-Wards20ind %>% 
+#      filter(LAD20NM==input$select_area, Indicator==input$select_ind )
+# 
+# 
+#  areasinds<- reactive({ subset })
+#  
+
   
 #############################
-# 6) try select area a zoom - can't work it out!!!-LC?
+# 6) try select area a zoom !-LC?
 ############################
   ui<-fluidPage(
     
