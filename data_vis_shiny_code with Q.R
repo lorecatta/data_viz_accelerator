@@ -2,10 +2,8 @@
 ### Rshiny - These are LKs learning notes and code- not code for collaborative coding or sharing!
 ######################################################
 library(fingertipsR)
-library(DataLakeR)
 library(dplyr)
 library(ggplot2)
-library(plotly)
 library(shiny)
 # this is was JW used in the slide packs
 library("maptools") 
@@ -71,8 +69,8 @@ Wards20ind <- merge(x=Wards20,
                     by.x="wd20cd",
                     by.y="AreaCode")
 
-lad_choices = list(`Slough`="Slough", `Southampton`="Southampton", `Woking`="Woking")
-ind_choices = list(`Myocardial Infarction`="Myocardial Infarction", `Stroke`="Stroke", `Coronary Heart Disease`="Coronary Heart Disease")
+lad_choices = list(Slough="Slough", Southampton="Southampton", Woking="Woking")
+ind_choices = list(`Myocardial Infarction`="Myocardial Infarction", Stroke="Stroke", `Coronary Heart Disease`="Coronary Heart Disease")
 
 bins <- c(1,2,3,4,5)
 col <- colorBin("YlOrRd", domain = Wards20ind$Within_LAD_Quintile, bins=bins)
@@ -220,65 +218,75 @@ shinyApp(ui = ui, server = server)
 
   
   
-#############################
-# 6) try select area a zoom - can't work it out!!!-LC?
-############################
-  ui<-fluidPage(
-    
-    selectInput(inputId="select_ind", label = h3("Select box"),
-                choices = ind_choices),
-    hr(),
-    fluidRow(column(3, verbatimTextOutput("value"))),
-    
-    selectInput(inputId="select_area", label = h3("Select box"), 
-                choices = lad_choices),
-    
-    hr(),
-    fluidRow(column(3, verbatimTextOutput("value"))),
-    
+# -----------------------------------------------------------------------------
+#
+# 6) try select area a zoom
+#
+# -----------------------------------------------------------------------------
+
+
+# Application layout
+# https://shiny.rstudio.com/articles/layout-guide.html
+
+
+ui <- fluidPage(
   
-    leafletOutput("mymap"),
-    p(),
+  titlePanel("Hello Shiny!"),
+  
+  sidebarLayout(
+    
+    sidebarPanel(
+      
+      selectInput(inputId = "select_ind", 
+                  label = h3("Select indicator"),
+                  choices = ind_choices),
+      selectInput(inputId="select_area", 
+                  label = h3("Select area"), 
+                  choices = lad_choices)
+    
+    ),
+  
+    mainPanel(
+      
+      leafletOutput("mymap")
+      
+    )
+  
   )
   
-  server <- function(input, output, session) {
-    
-    inds <- reactive({
-      Wards20ind%>%filter(Indicator==input$select_ind)
-    })
-    areas<- reactive({
-      Wards20ind%>%filter(LAD20NM==input$select_area)
-    })
-    
-    output$mymap <- renderLeaflet({
-      leaflet() %>%  # what goes here? data?
-        addProviderTiles(providers$OpenStreetMap)%>% 
-        addTiles() %>%
-        #  setView(long=-1.39142, lat=50.91242, zoom = 4) %>% 
-        addPolygons(
-          data=inds(),
-          fillColor = ~col(Within_LAD_Quintile),
-          weight = 1,
-          opacity = 1,
-          color = "black",
-          fillOpacity = 0.7,
-          label = ~wd20nm 
-        )
-    })
-    
+)
   
-  observe({
-  # #  sel_site <- df[df$site == input$site,]
-    isolate({
-      new_zoom <- 4
-      if(!is.null(input$map_zoom)) new_zoom <- input$map_zoom
-      leafletProxy("mymap", data=areas()) %>%
-        setView(long = areas()$long, lat = areas()$lat, zoom = new_zoom)
-    })
-  })
-
+server <- function(input, output, session) {
+  
+  inds_areas <- reactive(
+    {
+      Wards20ind %>% 
+        filter(Indicator == input$select_ind & LAD20NM == input$select_area)
+    }
+  )
+  
+  output$mymap <- renderLeaflet(
+    {
+      leaflet() %>%
+      addProviderTiles(providers$OpenStreetMap) %>% 
+      addTiles() %>%
+      # setView(lng=-0.118092, lat=51.509865, zoom = 5) %>%
+      addPolygons(
+        data = inds_areas(),
+        fillColor = ~col(Within_LAD_Quintile),
+        weight = 1,
+        opacity = 1,
+        color = "black",
+        fillOpacity = 0.7,
+        label = ~wd20nm)
+    }
+  )
 }
-  shinyApp(ui = ui, server = server)
+
+shinyApp(ui = ui, server = server)
+
+
+
 ###############
 # 7) try indicator on map and on chat at same time - not working LC?
 ###############
