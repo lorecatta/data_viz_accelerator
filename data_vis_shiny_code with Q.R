@@ -69,8 +69,8 @@ Wards20ind <- merge(x=Wards20,
                     by.x="wd20cd",
                     by.y="AreaCode")
 
-lad_choices = list(Slough="Slough", Southampton="Southampton", Woking="Woking")
-ind_choices = list(`Myocardial Infarction`="Myocardial Infarction", Stroke="Stroke", `Coronary Heart Disease`="Coronary Heart Disease")
+lad_choices = list("Slough", "Southampton", "Woking")
+ind_choices = list("Myocardial Infarction", "Stroke", "Coronary Heart Disease")
 
 bins <- c(1,2,3,4,5)
 col <- colorBin("YlOrRd", domain = Wards20ind$Within_LAD_Quintile, bins=bins)
