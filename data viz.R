@@ -254,6 +254,8 @@ p<-ggplot(cvd3, aes(WD20NM, Indicator, fill= Within_LAD_Quintile,text=text)) +
 #scale_fill_gradient(low="white", high="blue") - check with LC?
 #dev.new() - check with LC?
 
+ggplotly(p, tooltip="text")
+
 #rlang::last_error()
 ?scale_fill_gradient
 ?geom_tile
@@ -267,16 +269,12 @@ p<-ggplot(cvd3, aes(WD20NM, Indicator, fill= Within_LAD_Quintile,text=text)) +
 # downloaded shapefile from here: https://geoportal.statistics.gov.uk/datasets/ons::wards-may-2020-boundaries-uk-bgc/about
 # is this generlised clipped- Boundaries?: This file contains the digital vector boundaries for Wards, in the United Kingdom, as at May 2020. The boundaries available are: (BGC) Generalised (20m) - clipped to the coastline (Mean High Water mark).
 url <- "https://opendata.arcgis.com/datasets/62bfaabbe3e24a359fc36b34d7fe8ac8_0.geojson"
-
-Wards20 <- read_sf(url) # Reads in all wards for UK
-#, layer="Wards_(May_2020)_Boundaries_UK_BGC"
+Wards20 <- read_sf(url) # Reads in all wards for UK #, layer="Wards_(May_2020)_Boundaries_UK_BGC"
 Wards20$wd20cd <- as.character(Wards20$wd20cd)
 
 LAD20_url <- "https://opendata.arcgis.com/datasets/db23041df155451b9a703494854c18c4_0.geojson"
-
-LAD20 <- read_sf(LAD20_url) # Reads in all LAs for UK
-#,layer="Local Authority Districts (December 2020) UK BGC")
-LAD20$lad20cd <- as.character(LAD20$lad20cd)
+LAD20 <- read_sf(LAD20_url) # Reads in all LAs for UK #,layer="Local Authority Districts (December 2020) UK BGC")
+LAD20$LAD20CD <- as.character(LAD20$LAD20CD)
 
 #The GeoJSON is read as a special type of dataframe called a Spatial Polygons Data Frame (SPDF).
 
@@ -330,27 +328,18 @@ map_lad <- map %>%
 map_lad  # show the map
 ###################################
 # wards- this is what we will need
-###################################
+####################################
 #https://www.r-graph-gallery.com/183-choropleth-map-with-leaflet.html
 #https://rstudio.github.io/leaflet/shiny.html  # how to add map to Rshiny
 ###############################
 small_example <- read.csv("small_example.csv")  # this is made in shiny code- just pulling in here to test map
 ###############################
 
-# 1) Convert the shapefiles to a dataframe ---------- Check with LC? 
-# This allows data to be attached more easily and
-# is also required for gpplot to be able to plot the data
-# WdShp <-Wards20
-# Wds20Fort <- fortify(WdShp, region="wd20cd")
-# ? fortify # going out of date use broom?
+# 1) Convert the shapefiles to a dataframe - not needed with sf
+# ?mergefor now just want to test the small example (3 indicators per ward). = so only matching.
 
-# do I need to merge or can you work across shapefile and df?
-# Merge Data with fortified shapefile ---------- 
-# merge not rbind as spatial data, in sp package. 
-# for now just want to test the small example (3 indicators per ward). = so only matching.
-?merge
 Wards20ind <- merge(x=Wards20, 
-                    y=small_example, # X= change to sf object once you have the sf - LK
+                    y=small_example, 
                     by.x="wd20cd",
                     by.y="AreaCode")
 
@@ -392,7 +381,7 @@ map_wd <- map %>%
     weight = 1,  # line thickness
     opacity = 1,  # line transparency
     color = "black",  # line colour
-    fillColor=~mypalette(Within_LAD_Quintile), stroke=FALSE,  # can I add code for the quintile here? - LC? -
+  #  fillColor=~mypalette(Within_LAD_Quintile), stroke=FALSE,  # can I add code for the quintile here? - LC? -
     label = ~wd20nm  #  name as a hover label
   )
 
