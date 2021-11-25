@@ -4,17 +4,22 @@
 
 # Plan --------------------------------------------------------------------
 
-# add the heat map chart to shiny - done- why is the value hover not working
-# add indicator and area input to map to the shiny - done - check re zoom in 
-# add indicator and area input and the chart working - today - done
-# use reactive to have the areaname as selected once and apply to chart and map - today - done
-# add in the boundary of the LA in bold and the wards inside - today?
-# use reactive? to have the indicator added one by one (how?)on to heat map and geomap interactive
+# see #1 get the sub-group indicator list to work
+# see #2 add in the boundary of all the LA in bold nationally - so that user can see neighbors (maybe add select multi)
 # add in the composite value
-# full dataset rather than just small example
+# heat map same colors as the map
+
 
 # Format chats and map (add titles, CI etc)
+# Sizeing issues for the names of wards and text size
 # add new groups of indicators, tab's across vs select on right
+# change layout with heatmap on top and group select on top of right pane, add headings
+# Design with users
+
+# use reactive and PLAY to have the indicator added one by one (how?)on to heat map and geomap interactive
+# full dataset rather than just small example
+
+# LTLA only with 3? 
 
 
 # Load packages -----------------------------------------------------------
@@ -35,11 +40,27 @@ pacman::p_load(
 
 #```
 # Data preps --------------------------------------------------------------
-small_example <- read.csv("small_example.csv")
-# check dyplr this is base R -  use mutate?
-small_example$IndicatorG[small_example$Indicator=="Coronary Heart Disease"]<-"CVD"
-small_example$IndicatorG[small_example$Indicator=="Myocardial Infarction"]<-"CVD"
-small_example$IndicatorG[small_example$Indicator=="Stroke"]<-"CVD"
+#small_example <- read.csv("small_example.csv")
+small_example <- read.csv("cvd2.csv")
+
+#call UTLA20CD and NM -- to work out how to do for different levels of geography later -LK
+small_example<-small_example %>%
+  mutate(LAD20CD=UTLA20CD,LAD20NM=UTLA20NM, Within_LAD_Quintile=Within_UTLA_Quintile)
+# small_example<-small_example %>% 
+#   mutate(LAD20CD=LTLA20CD,LAD20NM=LTLA20NM, Within_LAD_Quintile=Within_LTLA_Quintile)
+
+# check dyplr this is base R -  this code can go in data_visR
+
+small_example$IndicatorG[small_example$Int_group==1 | small_example$Int_group==2 | small_example$Int_group==3]<-"CVD"
+
+small_example$IndicatorSG[small_example$Int_group==1]<-"CVD Risk factors"
+small_example$IndicatorSG[small_example$Int_group==2]<-"CVD Hospital admissions"
+small_example$IndicatorSG[small_example$Int_group==3]<-"CVD Deaths"
+
+# check dyplr this is base R - Indicator short name
+small_example$Indicator[small_example$Indicator=="Emergency hospital admissions for coronary heart disease, standardised admission ratio"]<-"Coronary Heart Disease"
+small_example$Indicator[small_example$Indicator=="Emergency hospital admissions for Myocardial Infarction (heart attack), standardised admission ratio"]<-"Myocardial Infarction"
+small_example$Indicator[small_example$Indicator=="Emergency hospital admissions for stroke, standardised admission ratio"]<-"Stroke"
 
 url <- "https://opendata.arcgis.com/datasets/62bfaabbe3e24a359fc36b34d7fe8ac8_0.geojson"
 Wards20 <- read_sf(url) # Reads in all wards for UK #, layer="Wards_(May_2020)_Boundaries_UK_BGC"
@@ -49,33 +70,27 @@ LAD20 <- read_sf(LAD20_url) # Reads in all LAs for UK #,layer="Local Authority D
 Wards20$wd20cd <- as.character(Wards20$wd20cd)
 LAD20$LAD20CD <- as.character(LAD20$LAD20CD)
 
-# # ? need the wards and lad co-od in here- why only lad in the ward geo file. check about x in merge?  
-# Wards20ind <- small_example %>% 
-#  left_join(Wards20, by=c("AreaCode"="wd20cd")) %>% 
-#  left_join(LAD20, by=c("LAD20CD"="LAD20CD"))
 
 Wards20ind <- merge(x=Wards20,
                     y=small_example,
                     by.x="wd20cd",
                     by.y="AreaCode")
 
-lad20_small_example <-LAD20 %>% 
-  filter(
-    LAD20NM=="Slough" | LAD20NM=="Southampton" | LAD20NM=="Woking"
-    )
 
-# add the interactive hover for value  and  indicator group 
+# add the interactive hover for value for the heatmap - not working in shiny change way to do this
 small_example <- small_example %>%
   mutate(
     text = paste0("Value: ",round(Value,2), "\n", "CI? sig than av")
   ) 
 
 lad_choices = unique(small_example$LAD20NM)
-indG_choices = list(CVD="CVD")
+indG_choices = unique(small_example$IndicatorG)
+indSG_choices = unique(small_example$IndicatorSG)
 ind_choices = unique(small_example$Indicator)
 
 bins <- c(1,2,3,4,5)
-col <- colorBin("YlOrRd", domain = Wards20ind$Within_LAD_Quintile, bins=bins)
+col <- colorBin("YlOrRd", domain = Wards20ind$Within_UTLA_Quintile, bins=bins)
+
 
 
 # Application layout
@@ -98,8 +113,17 @@ ui <- fluidPage(
      selectInput(inputId="select_indG", 
                   label = h3("Select Indicator Group"), 
                   choices = indG_choices),
+     selectInput(inputId="select_indSG", 
+                 label = h3("Select Indicator Sub-Group"), 
+                 choices = indSG_choices),
+     
+     # Just list indicators in the sub-group
+     # selectInput(inputId = "select_indinSG", 
+     #             label = h3("Select Indicator in Sub-Group"),
+     #             choices = ind_choices),
+     
      selectInput(inputId = "select_ind", 
-                  label = h3("Select indicator"),
+                  label = h3("Select Indicator"),
                   choices = ind_choices)
       
     ),
@@ -133,17 +157,42 @@ server <- function(input, output, session) {
     }
   )
   
+  indsSG_areas <- reactive(
+    {
+      Wards20ind %>% 
+        filter(IndicatorSG == input$select_indSG & LAD20NM == input$select_area)
+    }
+  )
+  
   lad_areas <- reactive(
     {
-      lad20_small_example %>% 
+     # lad20_small_example %>% 
+      LAD20 %>% 
         filter(LAD20NM == input$select_area)
     }
   )
   output$chart<-renderPlot({
     title<-"example chart for data viz"
     ggplot(inds_areas(),
-           aes(x=WD20NM,y=Value))+
-      geom_col()
+           aes(x=reorder(WD20NM,-Value),
+               y=Value,
+               #fillColor = ~col(Within_LAD_Quintile)))+
+               fill = Within_LAD_Quintile))+
+      labs(title=paste0(unique(small_example$IndicatorName)), # need to make this interactive
+          # subtile =paste0(unique(small_example&Timeperiod)),
+           y="paste the type from data",
+           x="Area Name")+
+      theme(axis.text.x = 
+              element_text(siz=10,
+                           angle=45,
+                           hjust=1,
+                           vjust=1))+
+    geom_col()+
+      geom_errorbar(aes(ymin=LowerCI95.0limit, ymax=UpperCI95.0limit), # check why not running
+                    width=0.2,
+                    position=position_dodge((0.9))
+                    )
+      
   })
   
   output$mymap <- renderLeaflet(
@@ -159,14 +208,15 @@ server <- function(input, output, session) {
           opacity = 1,
           color = "black",
           fillOpacity = 0.7,
-          label = ~wd20nm) %>% 
-        addPolygons(
-          data = lad_areas(),
-          weight = 4,
-         # opacity = 1,
-          color = "black",
-          stroke = TRUE
-        )
+          label = ~wd20nm) #%>%  # this has stopped working- up date with a better lable method
+        # addPolygons(
+        #  data = lad_areas(),
+        #  # data=LAD20,
+        #   weight = 4,
+        #   opacity = 1,
+        #   color = "black",
+        #   stroke = TRUE
+        #)
         
       
     }
@@ -175,9 +225,21 @@ server <- function(input, output, session) {
   
   output$heatmap<-renderPlot({  
     title<-"example heat map for data viz"
-    ggplot(indsG_areas(), 
-           aes(WD20NM, Indicator, fill= Within_LAD_Quintile,text=text)) +  
-      geom_tile()
+    ggplot(indsSG_areas(), 
+           aes(WD20NM, Indicator, 
+               fill= Within_LAD_Quintile)) +  #,text=text
+     labs(title=paste0(unique(small_example$IndicatorName)), # need to make this interactive indsSG_areas
+          # labs(title=indsSG_areas(), # need to make this interactive indsSG_areas
+           y="Indicator",
+           x="Area Name")+
+      theme(axis.text.x = 
+              element_text(siz=10,
+                           angle=45,
+                           hjust=1,
+                           vjust=1))+
+      
+      geom_tile()+
+      coord_fixed()
   })
   
 }
