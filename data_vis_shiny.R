@@ -18,8 +18,7 @@
 
 # use reactive and PLAY to have the indicator added one by one (how?)on to heat map and geomap interactive
 # full dataset rather than just small example
-
-# LTLA only with 3? 
+# add geo levels - can I loop somehow using same var name for each level
 
 
 # Load packages -----------------------------------------------------------
@@ -45,19 +44,20 @@ small_example <- read.csv("cvd2.csv")
 
 #call UTLA20CD and NM -- to work out how to do for different levels of geography later -LK
 small_example<-small_example %>%
-  mutate(LAD20CD=UTLA20CD,LAD20NM=UTLA20NM, Within_LAD_Quintile=Within_UTLA_Quintile)
-# small_example<-small_example %>% 
-#   mutate(LAD20CD=LTLA20CD,LAD20NM=LTLA20NM, Within_LAD_Quintile=Within_LTLA_Quintile)
+  rename("LAD20CD"=LTLA20CD,"LAD20NM"=LTLA20NM, "Within_LAD_Quintile"=Within_LTLA_Quintile )
 
 # check dyplr this is base R -  this code can go in data_visR
 
-small_example$IndicatorG[small_example$Int_group==1 | small_example$Int_group==2 | small_example$Int_group==3]<-"CVD"
+small_example$IndicatorG[small_example$Int_group==1 | small_example$Int_group==2 | small_example$Int_group==3]<-"cardiovascular disease (CVD)"
 
 small_example$IndicatorSG[small_example$Int_group==1]<-"CVD Risk factors"
 small_example$IndicatorSG[small_example$Int_group==2]<-"CVD Hospital admissions"
 small_example$IndicatorSG[small_example$Int_group==3]<-"CVD Deaths"
 
 # check dyplr this is base R - Indicator short name
+small_example<-small_example %>% 
+  mutate(Indicator=IndicatorName)
+
 small_example$Indicator[small_example$Indicator=="Emergency hospital admissions for coronary heart disease, standardised admission ratio"]<-"Coronary Heart Disease"
 small_example$Indicator[small_example$Indicator=="Emergency hospital admissions for Myocardial Infarction (heart attack), standardised admission ratio"]<-"Myocardial Infarction"
 small_example$Indicator[small_example$Indicator=="Emergency hospital admissions for stroke, standardised admission ratio"]<-"Stroke"
@@ -89,7 +89,7 @@ indSG_choices = unique(small_example$IndicatorSG)
 ind_choices = unique(small_example$Indicator)
 
 bins <- c(1,2,3,4,5)
-col <- colorBin("YlOrRd", domain = Wards20ind$Within_UTLA_Quintile, bins=bins)
+col <- colorBin("YlOrRd", domain = Wards20ind$Within_LAD_Quintile, bins=bins)
 
 
 
@@ -116,12 +116,6 @@ ui <- fluidPage(
      selectInput(inputId="select_indSG", 
                  label = h3("Select Indicator Sub-Group"), 
                  choices = indSG_choices),
-     
-     # Just list indicators in the sub-group
-     # selectInput(inputId = "select_indinSG", 
-     #             label = h3("Select Indicator in Sub-Group"),
-     #             choices = ind_choices),
-     
      selectInput(inputId = "select_ind", 
                   label = h3("Select Indicator"),
                   choices = ind_choices)
@@ -166,7 +160,6 @@ server <- function(input, output, session) {
   
   lad_areas <- reactive(
     {
-     # lad20_small_example %>% 
       LAD20 %>% 
         filter(LAD20NM == input$select_area)
     }
@@ -176,7 +169,6 @@ server <- function(input, output, session) {
     ggplot(inds_areas(),
            aes(x=reorder(WD20NM,-Value),
                y=Value,
-               #fillColor = ~col(Within_LAD_Quintile)))+
                fill = Within_LAD_Quintile))+
       labs(title=paste0(unique(small_example$IndicatorName)), # need to make this interactive
           # subtile =paste0(unique(small_example&Timeperiod)),
@@ -188,7 +180,7 @@ server <- function(input, output, session) {
                            hjust=1,
                            vjust=1))+
     geom_col()+
-      geom_errorbar(aes(ymin=LowerCI95.0limit, ymax=UpperCI95.0limit), # check why not running
+      geom_errorbar(aes(ymin=LowerCI95.0limit, ymax=UpperCI95.0limit), # check why not running well ? LC?
                     width=0.2,
                     position=position_dodge((0.9))
                     )
@@ -200,7 +192,6 @@ server <- function(input, output, session) {
       leaflet() %>%
         addProviderTiles(providers$OpenStreetMap) %>% 
         addTiles() %>%
-        # setView(lng = -1.988229, lat = 50.736129, zoom = 6) %>% 
         addPolygons(
           data = inds_areas(),
           fillColor = ~col(Within_LAD_Quintile),
@@ -209,16 +200,7 @@ server <- function(input, output, session) {
           color = "black",
           fillOpacity = 0.7,
           label = ~wd20nm) #%>%  # this has stopped working- up date with a better lable method
-        # addPolygons(
-        #  data = lad_areas(),
-        #  # data=LAD20,
-        #   weight = 4,
-        #   opacity = 1,
-        #   color = "black",
-        #   stroke = TRUE
-        #)
-        
-      
+ 
     }
   )
   
