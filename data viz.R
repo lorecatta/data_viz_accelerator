@@ -93,18 +93,15 @@ bhcvd1<-cvd1%>%
  distinct( AreaName, .keep_all = TRUE) %>% #21 wards 19?
   filter(UTLA20NM=="Brighton and Hove") 
 
-##LK check if the map boundery is utLA or lt? 
+##LK check if the map boundary is utLA or lt? 
 # 14/10 keeping all regions in to test the mapping- LK
 secvd1<-cvd1 %>% 
   filter(RGN09NM=="South East")
 
 # Write and read cvd1 --------------------------------------------------------------
 write.csv(cvd1,"cvd1.csv")
-cvd1 <- read.csv("cvd1.csv")
 # Data preparation R ------------------------------------------------------
-
-cvd1<-cvd1 %>% 
-  mutate(Indicator=IndicatorName)
+cvd1 <- read.csv("cvd1.csv")
 
 # Indicators I am interested in for first example of CVD
 Ind_cvd_rf<-c("93105", "93106" , "93489" , "93488" , "93107", "93108")
@@ -122,33 +119,9 @@ cvd1$Int_group[cvd1$IndicatorID=="93105"| cvd1$IndicatorID=="93106" | cvd1$Indic
 cvd1$Int_group[cvd1$IndicatorID=="93229"| cvd1$IndicatorID=="93232" | cvd1$IndicatorID=="93231"]<-2 #"CVD Hospital Admissions"
 cvd1$Int_group[cvd1$IndicatorID=="93259"| cvd1$IndicatorID=="93257" ]<-3 #"CVD Deaths"
 
-# T do rename the Indicators something short
-# check dyplr this is base R
-cvd1$Indicator[cvd1$Indicator=="Emergency hospital admissions for coronary heart disease, standardised admission ratio"]<-"Coronary Heart Disease"
-cvd1$Indicator[cvd1$Indicator=="Emergency hospital admissions for Myocardial Infarction (heart attack), standardised admission ratio"]<-"Myocardial Infarction"
-cvd1$Indicator[cvd1$Indicator=="Emergency hospital admissions for stroke, standardised admission ratio"]<-"Stroke"
-
-
 # Rank and within area quintiles ------------------------------------------
 
-cvd1 <- cvd1 %>%
-  group_by(UTLA20CD, IndicatorID) %>%
-  mutate(
-    Within_UTLA_Rank=row_number(Value),
-    Within_UTLA_Reverse_Rank=row_number(desc(Within_UTLA_Rank)),
-    Within_UTLA_Quintile=ntile(Value,5),
-  )
-
-cvd1 <- cvd1 %>%
-  group_by(UTLA20CD, Int_group) %>%
-  mutate(
-    Total_UTLA_score=sum(Within_UTLA_Quintile, na.rm = T),
-    Total_UTLA_quintile=ntile(Total_UTLA_score,5)
-)
-
-
 ## re code this as loops!
-
 cvd1 <- cvd1 %>%
   group_by(LTLA20CD, IndicatorID) %>%
   mutate(
@@ -158,12 +131,37 @@ cvd1 <- cvd1 %>%
   )
 
 cvd1 <- cvd1 %>%
-  group_by(LTLA20CD, Int_group) %>%
+  group_by(AreaName, Int_group) %>%
   mutate(
-    Total_LTLA_score=sum(Within_LTLA_Quintile, na.rm = T),
-    Total_LTLA_quintile=ntile(Total_LTLA_score,5)
+    Total_wardIG_score=sum(Within_LTLA_Quintile, na.rm = T)
   )
 
+cvd1 <- cvd1 %>%
+  group_by(LTLA20CD, Int_group) %>%
+  mutate(
+Total_LTLAIG_quintile=ntile(Total_wardIG_score,5)
+)
+
+
+# the records for the composite in for LTLA
+cvdLTLAT <- cvd1 %>%
+  distinct (AreaName, Int_group,.keep_all=T ) %>% 
+  select(LTLA20CD, LTLA20NM, AreaName, WD20NM, AreaCode, Int_group, Total_wardIG_score, Total_LTLAIG_quintile) %>% 
+  mutate(IndicatorName="Composite Indicator group quintile", Within_LTLA_Quintile=Total_LTLAIG_quintile) # named the same col 
+
+cvd1<-cvd1 %>% 
+  bind_rows(cvd1,cvdLTLAT)
+
+#
+cvd1 <- cvd1 %>%
+  group_by(UTLA20CD, IndicatorID) %>%
+  mutate(
+    Within_UTLA_Rank=row_number(Value),
+    Within_UTLA_Reverse_Rank=row_number(desc(Within_UTLA_Rank)),
+    Within_UTLA_Quintile=ntile(Value,5),
+  )
+
+#
 cvd1 <- cvd1 %>%
   group_by(RGN09CD, IndicatorID) %>%
   mutate(
@@ -172,25 +170,18 @@ cvd1 <- cvd1 %>%
     Within_RGN_Quintile=ntile(Value,5),
   )
 
-cvd1 <- cvd1 %>%
-  group_by(RGN09CD, Int_group) %>%
-  mutate(
-    Total_RGN_score=sum(Within_RGN_Quintile, na.rm = T),
-    Total_RGN_quintile=ntile(Total_RGN_score,5)
-  )
-
-# need to have interactive, so that as each indicator is added one by one and the score is additional? 
-# Prescribed groups i.e. this is CVD admissions or could be user defined. (could add user defined weighting)
 
 # Read and Write cvd2 --------------------------------------------------------------
 write.csv(cvd1,"cvd2a.csv")
 cvd2a <- read.csv("cvd2a.csv")
 
 cvd2<-cvd2a %>%  # SE for testing the shiny
-  select(RGN09NM, UTLA20CD,UTLA20NM, LTLA20CD,LTLA20NM, AreaCode, WD20NM,IndicatorID, IndicatorName, Indicator, Int_group, Value, Within_UTLA_Rank, Within_UTLA_Reverse_Rank, Within_UTLA_Quintile, Total_UTLA_quintile,
-         Within_LTLA_Rank, Within_LTLA_Reverse_Rank, Within_LTLA_Quintile, Total_LTLA_quintile,
-         Within_RGN_Rank, Within_RGN_Reverse_Rank, Within_RGN_Quintile, Total_RGN_quintile,
-         Timeperiod, LowerCI95.0limit, UpperCI95.0limit
+  select(RGN09NM, UTLA20CD,UTLA20NM, LTLA20CD,LTLA20NM, AreaCode, WD20NM,IndicatorID, IndicatorName, Int_group, 
+         Value,Timeperiod, LowerCI95.0limit, UpperCI95.0limit,
+         Within_LTLA_Rank, Within_LTLA_Reverse_Rank, Within_LTLA_Quintile, 
+         Total_wardIG_score, Total_LTLAIG_quintile,
+         Within_UTLA_Rank, Within_UTLA_Reverse_Rank, Within_UTLA_Quintile, 
+         Within_RGN_Rank, Within_RGN_Reverse_Rank, Within_RGN_Quintile 
          )
 
 
