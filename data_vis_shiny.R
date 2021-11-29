@@ -83,11 +83,6 @@ small_example <- small_example %>%
     text = paste0("Value: ",round(Value,2), "\n", "CI? sig than av")
   ) 
 
-lad_choices = unique(small_example$LAD20NM)
-indG_choices = unique(small_example$IndicatorG)
-indSG_choices = unique(small_example$IndicatorSG)
-ind_choices = unique(small_example$Indicator)
-
 bins <- c(1,2,3,4,5)
 col <- colorBin("YlOrRd", domain = Wards20ind$Within_LAD_Quintile, bins=bins)
 
@@ -109,16 +104,16 @@ ui <- fluidPage(
       
      selectInput(inputId="select_area", 
                   label = h3("Select area"), 
-                  choices = lad_choices), 
+                  choices = sort(unique(small_example$LAD20NM))), 
      selectInput(inputId="select_indG", 
                   label = h3("Select Indicator Group"), 
-                  choices = indG_choices),
+                  choices = NULL),
      selectInput(inputId="select_indSG", 
                  label = h3("Select Indicator Sub-Group"), 
-                 choices = indSG_choices),
+                 choices = NULL),
      selectInput(inputId = "select_ind", 
                   label = h3("Select Indicator"),
-                  choices = ind_choices)
+                  choices = NULL)
       
     ),
     
