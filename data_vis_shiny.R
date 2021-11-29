@@ -113,7 +113,7 @@ ui <- fluidPage(
                  choices = sort(unique(small_example$IndicatorSG))),
      selectInput(inputId = "select_ind", 
                   label = h3("Select Indicator"),
-                  choices = NULL)
+                  choices = sort(unique(small_example$Indicator)))
       
     ),
     
@@ -154,12 +154,6 @@ server <- function(input, output, session) {
   })
   
   
-  lad_areas <- reactive(
-    {
-      LAD20 %>%
-        filter(LAD20NM == input$select_area)
-    }
-  )
   output$chart<-renderPlot({
     title<-"example chart for data viz"
     ggplot(inds_areas(),
