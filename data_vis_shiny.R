@@ -107,10 +107,10 @@ ui <- fluidPage(
                   choices = sort(unique(small_example$LAD20NM))), 
      selectInput(inputId="select_indG", 
                   label = h3("Select Indicator Group"), 
-                  choices = NULL),
+                  choices = sort(unique(small_example$IndicatorG))),
      selectInput(inputId="select_indSG", 
                  label = h3("Select Indicator Sub-Group"), 
-                 choices = NULL),
+                 choices = sort(unique(small_example$IndicatorSG))),
      selectInput(inputId = "select_ind", 
                   label = h3("Select Indicator"),
                   choices = NULL)
@@ -139,6 +139,7 @@ server <- function(input, output, session) {
     }
   )
   
+  
   indsG_areas <- reactive(
     {
       Wards20ind %>% 
@@ -146,16 +147,22 @@ server <- function(input, output, session) {
     }
   )
   
+  
   indsSG_areas <- reactive(
     {
       Wards20ind %>% 
         filter(IndicatorSG == input$select_indSG & LAD20NM == input$select_area)
     }
   )
+  observeEvent(indsSG_areas(), {
+    choices <- unique(indsSG_areas()$Indicator)
+    updateSelectInput(inputId = "select_ind", choices = choices)
+  })
+  
   
   lad_areas <- reactive(
     {
-      LAD20 %>% 
+      LAD20 %>%
         filter(LAD20NM == input$select_area)
     }
   )
