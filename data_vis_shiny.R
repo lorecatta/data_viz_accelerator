@@ -132,28 +132,22 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  inds_areas <- reactive(
-    {
-      Wards20ind %>% 
-        filter(Indicator == input$select_ind & LAD20NM == input$select_area)
-    }
-  )
+  inds_areas <- reactive({
+    Wards20ind %>% 
+      filter(Indicator == input$select_ind & LAD20NM == input$select_area)
+  })
   
   
-  indsG_areas <- reactive(
-    {
-      Wards20ind %>% 
-        filter(IndicatorG == input$select_indG & LAD20NM == input$select_area)
-    }
-  )
+  indsG_areas <- reactive({
+    Wards20ind %>% 
+      filter(IndicatorG == input$select_indG & LAD20NM == input$select_area)
+  })
   
   
-  indsSG_areas <- reactive(
-    {
-      Wards20ind %>% 
-        filter(IndicatorSG == input$select_indSG & LAD20NM == input$select_area)
-    }
-  )
+  indsSG_areas <- reactive({
+    Wards20ind %>% 
+      filter(IndicatorSG == input$select_indSG & LAD20NM == input$select_area)
+  })
   observeEvent(indsSG_areas(), {
     choices <- unique(indsSG_areas()$Indicator)
     updateSelectInput(inputId = "select_ind", choices = choices)
